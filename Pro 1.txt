@@ -1,0 +1,290 @@
+package com.hotelbooking;
+
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+
+import java.time.Duration;
+
+public class BaseTest {
+    protected WebDriver driver;
+
+    @BeforeMethod
+    public void setup() {
+        System.setProperty("webdriver.chrome.driver", "path/to/chromedriver");
+        driver = new ChromeDriver();
+        driver.manage().window().maximize();
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        driver.get("https://example.com/home"); // Home Page URL
+    }
+
+    @AfterMethod
+    public void teardown() {
+        if (driver != null) {
+            driver.quit();
+        }
+}
+}
+///
+package com.hotelbooking;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+public class UserBookingTest extends BaseTest {
+
+    @Test
+    public void testUserBookingFlow() {
+        // User Login
+        driver.findElement(By.id("username")).sendKeys("user123");
+        driver.findElement(By.id("password")).sendKeys("user@123");
+        driver.findElement(By.id("userLoginButton")).click();
+
+        // Verify user dashboard
+        Assert.assertEquals(driver.getCurrentUrl(), "https://example.com/userDashboard");
+
+        // Search for a hotel
+        driver.findElement(By.id("searchHotel")).sendKeys("Grand Palace");
+        driver.findElement(By.id("searchButton")).click();
+
+        // Select and book a hotel
+        WebElement bookNowButton = driver.findElement(By.cssSelector("button[data-hotel-            id='101']"));
+        bookNowButton.click();
+
+        // Fill Booking Form
+        driver.findElement(By.id("name")).sendKeys("John Doe");
+        driver.findElement(By.id("email")).sendKeys("john.doe@example.com");
+        driver.findElement(By.id("phone")).sendKeys("9876543210");
+        driver.findElement(By.id("date")).sendKeys("2025-04-15");
+        driver.findElement(By.id("days")).sendKeys("3");
+        driver.findElement(By.id("confirmBooking")).click();
+
+        // Verify success message
+        String successMessage = driver.findElement(By.id("bookingMessage")).getText();
+        Assert.assertEquals(successMessage, "Booking Successful!");
+    }
+}
+/////
+package com.hotelbooking;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+public class AdminBookingTest extends BaseTest {
+
+    @Test
+    public void testAdminBookingCancellation() {
+        // Admin Login
+        driver.findElement(By.id("username")).sendKeys("admin123");
+        driver.findElement(By.id("password")).sendKeys("admin@123");
+        driver.findElement(By.id("adminLoginButton")).click();
+
+        // Verify admin dashboard
+        Assert.assertEquals(driver.getCurrentUrl(), "https://example.com/adminDashboard");
+
+        // Cancel a booking
+        WebElement cancelButton = driver.findElement(By.cssSelector("button[data-booking-id='101']"));
+        cancelButton.click();
+// Verify cancellation success message
+        String cancelMessage = driver.findElement(By.id("cancelMessage")).getText();
+        Assert.assertEquals(cancelMessage, "Booking Cancelled Successfully!");
+
+        // Verify booking count reduced
+        int initialCount = Integer.parseInt(driver.findElement(By.id("bookingCount")).getText());
+        driver.navigate().refresh();
+        int updatedCount = Integer.parseInt(driver.findElement(By.id("bookingCount")).getText());
+        Assert.assertEquals(updatedCount, initialCount - 1);
+    }
+}
+/////
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Hotel Booking System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Hotel Booking System</h1>
+
+        <!-- User Login Section -->
+        <div class="login-section">
+            <h2>User Login</h2>
+            <input type="text" id="userUsername" placeholder="Username">
+            <input type="password" id="userPassword" placeholder="Password">
+            <button onclick="login('user')">Login</button>
+        </div>
+
+        <!-- Admin Login Section -->
+        <div class="login-section">
+            <h2>Admin Login</h2>
+            <input type="text" id="adminUsername" placeholder="Username">
+            <input type="password" id="adminPassword" placeholder="Password">
+            <button onclick="login('admin')">Login</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>User Dashboard</h1>
+
+    <div>
+        <input type="text" id="searchHotel" placeholder="Search for Hotels">
+        <button id="searchButton" onclick="searchHotels()">Search</button>
+    </div>
+
+    <div id="hotelList">
+        <div class="hotel" data-hotel-id="101">
+            <h3>Hotel Paradise</h3>
+            <p>Location: New York | Price: $100/night</p>
+            <button onclick="bookHotel('101')">Book Now</button>
+        </div>
+    </div>
+
+    <div id="bookingForm" class="hidden">
+        <h3>Booking Form</h3>
+        <input type="text" id="name" placeholder="Name">
+        <input type="email" id="email" placeholder="Email">
+        <input type="tel" id="phone" placeholder="Phone">
+        <input type="date" id="date">
+        <input type="number" id="days" placeholder="Number of Days">
+        <button id="confirmBooking" onclick="confirmBooking()">Confirm Booking</button>
+    </div>
+
+    <div id="bookingMessage" class="hidden">Booking Successful!</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+
+    <div id="bookings">
+        <table>
+            <tr>
+                <th>User Name</th>
+                <th>Hotel Name</th>
+                <th>Booking Date</th>
+                <th>Days</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            <tr>
+                <td>John Doe</td>
+                <td>Hotel Paradise</td>
+                <td>2025-04-15</td>
+                <td>3</td>
+                <td id="status-101">Confirmed</td>
+                <td><button onclick="cancelBooking('101')">Cancel</button></td>
+            </tr>
+        </table>
+</div>
+
+    <div id="cancelMessage" class="hidden">Booking Cancelled Successfully!</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    display: flex;
+    gap: 50px;
+}
+
+.login-section, .hotel, #bookingForm {
+    border: 1px solid #ccc;
+    padding: 20px;
+    background-color: #ffffff;
+    width: 300px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+function login(userType) {
+    if (userType === "user") {
+        window.location.href = "userDashboard.html";
+    } else if (userType === "admin") {
+        window.location.href = "adminDashboard.html";
+    }
+}
+
+// Search Hotel
+function searchHotels() {
+    const searchInput = document.getElementById("searchHotel").value.toLowerCase();
+    const hotelList = document.getElementById("hotelList");
+
+    if (searchInput === "hotel paradise") {
+        hotelList.style.display = "block";
+    } else {
+        alert("No matching hotel found.");
+    }
+}
+
+// Booking Process
+function bookHotel(hotelId) {
+    document.getElementById("bookingForm").classList.remove("hidden");
+}
+
+function confirmBooking() {
+    document.getElementById("bookingMessage").classList.remove("hidden");
+    setTimeout(() => {
+        window.location.href = "adminDashboard.html";
+    }, 2000);
+}
+
+// Admin - Cancel Booking
+function cancelBooking(bookingId) {
+    document.getElementById(status-${bookingId}).innerText = "Cancelled";
+    document.getElementById("cancelMessage").classList.remove("hidden");
+}
+
+
+
+
