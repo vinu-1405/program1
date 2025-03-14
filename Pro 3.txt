@@ -1,0 +1,91 @@
+package com.usermanagement;
+
+import io.restassured.RestAssured;
+import io.restassured.specification.RequestSpecification;
+import org.testng.annotations.BeforeClass;
+
+public class BaseAPITest {
+
+    protected RequestSpecification request;
+
+    @BeforeClass
+    public void setup() {
+        RestAssured.baseURI = "https://example.com/api";
+        request = RestAssured.given().header("Content-Type", "application/json");
+    }
+}
+
+package com.usermanagement;
+
+import io.restassured.response.Response;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.restassured.RestAssured.*;
+import static org.hamcrest.Matchers.*;
+
+public class UserAPITest extends BaseAPITest {
+
+    private static String userId;
+
+    // Step 1: Create User
+    @Test(priority = 1)
+    public void testCreateUser() {
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("username", "testUser");
+        requestBody.put("email", "testuser@example.com");
+        requestBody.put("password", "password123");
+
+        Response response = request.body(requestBody)
+ .post("/users")
+                .then()
+                .statusCode(201)
+                .body("message", equalTo("User created successfully."))
+                .extract().response();
+
+        userId = response.jsonPath().getString("id");  // Extract and save user ID
+        Assert.assertNotNull(userId, "User ID should not be null");
+    }
+
+    // Step 2: Get User Details
+    @Test(priority = 2, dependsOnMethods = "testCreateUser")
+public void testGetUserDetails() {
+        request.get("/users/" + userId)
+                .then()
+                .statusCode(200)
+                .body("username", equalTo("testUser"))
+                .body("email", equalTo("testuser@example.com"));
+    }
+
+    // Step 3: Update User Email
+    @Test(priority = 3, dependsOnMethods = "testGetUserDetails")
+    public void testUpdateUser() {
+        Map<String, String> updatedData = new HashMap<>();
+        updatedData.put("email", "newemail@example.com");
+
+        request.body(updatedData)
+                .put("/users/" + userId)
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("User updated successfully."));
+    }
+
+    // Step 4: Delete User
+    @Test(priority = 4, dependsOnMethods = "testUpdateUser")
+    public void testDeleteUser() {
+        request.delete("/users/" + userId)
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("User deleted successfully."));
+
+        // Step 5: Verify Deletion
+        request.get("/users/" + userId)
+                .then()
+                .statusCode(404); // User should no longer exist
+    }
+}
+
+
